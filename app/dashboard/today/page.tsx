@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export const metadata: Metadata = { title: 'Today' }
-import { getDaySchedule, getOverallStats, getSubjectStats } from '@/lib/attendance'
+import { getDaySchedule, getOverallStats, getAllSubjectStats } from '@/lib/attendance'
 import type { Subject } from '@/lib/types'
 import TodayClient from './TodayClient'
 
@@ -32,19 +32,16 @@ export default async function TodayPage() {
   const msPerWeek = 7 * 24 * 60 * 60 * 1000
   const weekNum = Math.max(1, Math.ceil((todayJs.getTime() - semStart.getTime()) / msPerWeek))
 
-  const [dayResult, overallStats] = await Promise.all([
-    getDaySchedule(supabase, todayStr, user!.id, semester.id),
-    getOverallStats(supabase, semester.id, user!.id),
-  ])
-
-  // Per-subject stats for alert banners (only subjects appearing today)
+  // All 3 fetches in parallel; getAllSubjectStats itself uses only 3-4 queries total
   const { data: subjectsRaw } = await supabase
     .from('subjects').select('*').eq('semester_id', semester.id)
   const subjects = (subjectsRaw ?? []) as Subject[]
 
-  const subjectStatsArr = await Promise.all(
-    subjects.map(s => getSubjectStats(supabase, s.id, user!.id))
-  )
+  const [dayResult, overallStats, subjectStatsArr] = await Promise.all([
+    getDaySchedule(supabase, todayStr, user!.id, semester.id),
+    getOverallStats(supabase, semester.id, user!.id),
+    getAllSubjectStats(supabase, semester.id, user!.id),
+  ])
 
   // Map subject id → name/color for banners
   const subjectMeta = new Map(subjects.map(s => [s.id, { name: s.name, color: s.color }]))

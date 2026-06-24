@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { getSubjectStats } from '@/lib/attendance'
+import { getAllSubjectStats } from '@/lib/attendance'
 import { getSparklineData } from '@/lib/analytics'
 import type { Subject, Semester } from '@/lib/types'
 import OverviewClient from './OverviewClient'
@@ -38,10 +38,17 @@ export default async function OverviewPage() {
     .from('subjects').select('*').eq('semester_id', sem.id).eq('user_id', user!.id)
   const subjects = (subjectsRaw ?? []) as Subject[]
 
-  const subjectData = await Promise.all(subjects.map(async s => {
-    const stats = await getSubjectStats(supabase, s.id, user!.id)
-    const sparkline = await getSparklineData(supabase, s.id, user!.id)
-    return { subject: s, stats, sparkline }
+  // Single batched call for all subject stats (3 queries regardless of subject count)
+  const allStats = await getAllSubjectStats(supabase, sem.id, user!.id)
+  const statsById = new Map(allStats.map(s => [s.subjectId, s]))
+
+  // Sparklines in parallel (not sequential)
+  const sparklines = await Promise.all(subjects.map(s => getSparklineData(supabase, s.id, user!.id)))
+
+  const subjectData = subjects.map((s, i) => ({
+    subject: s,
+    stats: statsById.get(s.id) ?? allStats[0],
+    sparkline: sparklines[i],
   }))
 
   const totAttended = subjectData.reduce((a, d) => a + d.stats.attended, 0)
