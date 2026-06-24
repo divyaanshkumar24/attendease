@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Subject } from './types'
 import { getSubjectStats } from './attendance'
+import { cacheGet, cacheSet, key, TTL } from './redis'
 
 export interface WeeklySubjectStat {
   subjectId: string
@@ -71,6 +72,10 @@ export async function getWeekReport(
   semesterId: string,
   weekOffset = 0,
 ): Promise<WeekReport> {
+  const cacheKey = key.weekReport(userId, semesterId, weekOffset)
+  const cached = await cacheGet<WeekReport>(cacheKey)
+  if (cached) return cached
+
   const { start, end } = getWeekBounds(weekOffset)
   const weekStart = toYMD(start)
   const weekEnd = toYMD(end)
@@ -163,7 +168,7 @@ export async function getWeekReport(
     })
   }
 
-  return {
+  const report: WeekReport = {
     weekStart,
     weekEnd,
     scheduled: totScheduled,
@@ -172,6 +177,8 @@ export async function getWeekReport(
     weeklyPct: totScheduled > 0 ? Math.round((totAttended / totScheduled) * 100) : 0,
     subjects: subjectRows,
   }
+  await cacheSet(cacheKey, report, TTL.reports)
+  return report
 }
 
 // ─── getSemesterReport ─────────────────────────────────────────────────────────
@@ -181,6 +188,10 @@ export async function getSemesterReport(
   userId: string,
   semesterId: string,
 ): Promise<SemesterSubjectRow[]> {
+  const cacheKey = key.semReport(userId, semesterId)
+  const cached = await cacheGet<SemesterSubjectRow[]>(cacheKey)
+  if (cached) return cached
+
   const { data: subjects } = await supabase
     .from('subjects')
     .select('id, name, short_code, color, attendance_target_percent')
@@ -212,6 +223,7 @@ export async function getSemesterReport(
       trend,
     })
   }
+  await cacheSet(cacheKey, rows, TTL.reports)
   return rows
 }
 
@@ -223,6 +235,10 @@ export async function getSparklineData(
   subjectId: string,
   userId: string,
 ): Promise<number[]> {
+  const cacheKey = key.sparkline(userId, subjectId)
+  const cached = await cacheGet<number[]>(cacheKey)
+  if (cached) return cached
+
   const weeks: number[] = []
   for (let offset = -3; offset <= 0; offset++) {
     const { start, end } = getWeekBounds(offset)
@@ -260,6 +276,7 @@ export async function getSparklineData(
     const total = recList.filter(r => r.status !== 'cancelled').length
     weeks.push(total > 0 ? Math.round((attended / total) * 100) : 0)
   }
+  await cacheSet(cacheKey, weeks, TTL.sparkline)
   return weeks
 }
 
