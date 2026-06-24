@@ -29,11 +29,14 @@ export function Sidebar({ semesterName }: Props) {
   return (
     <aside className="hidden md:flex w-[240px] shrink-0 flex-col bg-white border-r border-[#EBEBEB] h-screen sticky top-0">
       {/* Brand */}
-      <div className="px-5 pt-6 pb-5">
-        <span className="text-[16px] font-[500] text-[#111111] tracking-tight">AttendEase</span>
-        {semesterName && (
-          <p className="text-[12px] text-[#ABABAB] mt-0.5 truncate">{semesterName}</p>
-        )}
+      <div className="px-5 pt-6 pb-5 flex items-center gap-2.5">
+        <img src="/icon.svg" alt="" className="w-[28px] h-[28px] rounded-[7px]" />
+        <div>
+          <span className="text-[16px] font-[500] text-[#111111] tracking-tight">AttendEase</span>
+          {semesterName && (
+            <p className="text-[12px] text-[#ABABAB] truncate">{semesterName}</p>
+          )}
+        </div>
       </div>
 
       {/* Nav */}

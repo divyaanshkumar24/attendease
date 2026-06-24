@@ -32,7 +32,10 @@ export function TopBar({ semesterName, hasUnmarkedToday, onMarkToday }: Props) {
 
   return (
     <header className="h-[56px] shrink-0 flex items-center justify-between px-6 bg-white border-b border-[#EBEBEB]">
-      <h1 className="text-[15px] font-[500] text-[#111111]">{title}</h1>
+      <div className="flex items-center gap-2.5">
+        <img src="/icon.svg" alt="" className="md:hidden w-[26px] h-[26px] rounded-[6px]" />
+        <h1 className="text-[15px] font-[500] text-[#111111]">{title}</h1>
+      </div>
 
       <div className="flex items-center gap-3">
         {semesterName && (

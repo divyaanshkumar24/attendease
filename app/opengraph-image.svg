@@ -1,0 +1,10 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F5F7FF"/>
+  <!-- Icon -->
+  <rect x="476" y="175" width="248" height="248" rx="52" fill="#3B6FE8"/>
+  <circle cx="600" cy="237" r="62" fill="none" stroke="white" stroke-width="29"/>
+  <path d="M530 380 L596 455 L720 315" stroke="white" stroke-width="29" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- App name -->
+  <text x="600" y="490" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="600" fill="#111111">AttendEase</text>
+  <text x="600" y="538" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#6B6B6B">College attendance, simplified.</text>
+</svg>
