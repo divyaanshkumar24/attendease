@@ -120,73 +120,127 @@ export function BottomTabBar() {
   }
 
   const moreActive = MORE_ITEMS.some(({ href }) => pathname === href || pathname.startsWith(href + '/'))
+  const morePending = MORE_ITEMS.some(({ href }) => pending === href)
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#EBEBEB] flex" ref={ref}>
-      {MOBILE_TABS.map(({ href, label, Icon }) => {
-        const active = pathname === href || pathname.startsWith(href + '/')
-        const loading = pending === href
-        return (
-          <button
-            key={href}
-            onClick={() => navigate(href)}
-            className={cn(
-              'flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] transition-colors duration-150',
-              active || loading ? 'text-[#5B5BD6]' : 'text-[#ABABAB]'
-            )}
-          >
-            {loading
-              ? <Loader2 size={20} className="animate-spin" />
-              : <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-            }
-            {label}
-          </button>
-        )
-      })}
-
-      {/* More button */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        className={cn(
-          'flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] transition-colors duration-150',
-          open || moreActive || MORE_ITEMS.some(({ href }) => pending === href)
-            ? 'text-[#5B5BD6]'
-            : 'text-[#ABABAB]'
-        )}
+    // Outer wrapper — pointer-events-none so page scroll works through empty space
+    <div
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+    >
+      {/* Floating pill */}
+      <div
+        ref={ref}
+        className="pointer-events-auto relative flex items-center gap-0.5 rounded-full px-2 py-1.5"
+        style={{
+          background: 'rgba(255, 255, 255, 0.82)',
+          backdropFilter: 'blur(24px) saturate(200%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+          border: '1px solid rgba(255, 255, 255, 0.55)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
+        }}
       >
-        <MoreHorizontal size={20} strokeWidth={open || moreActive ? 2.2 : 1.8} />
-        More
-      </button>
-
-      {/* Popup menu */}
-      {open && (
-        <div className="absolute bottom-[calc(100%+6px)] right-2 bg-white border border-[#EBEBEB] rounded-[12px] shadow-lg py-1.5 min-w-[160px] z-50">
-          {MORE_ITEMS.map(({ href, label, Icon }) => {
-            const active = pathname === href || pathname.startsWith(href + '/')
-            const loading = pending === href
-            return (
-              <button
-                key={href}
-                onClick={() => navigate(href)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-4 py-2.5 text-[14px] transition-colors text-left',
-                  active
-                    ? 'text-[#5B5BD6] font-[500] bg-[rgba(91,91,214,0.06)]'
-                    : loading
-                    ? 'text-[#5B5BD6] bg-[rgba(91,91,214,0.04)]'
-                    : 'text-[#111111] hover:bg-[#F5F5F5]'
-                )}
-              >
-                {loading
-                  ? <Loader2 size={16} className="animate-spin shrink-0" />
-                  : <Icon size={16} strokeWidth={active ? 2.2 : 1.8} className="shrink-0" />
-                }
+        {/* Main tabs */}
+        {MOBILE_TABS.map(({ href, label, Icon }) => {
+          const active = pathname === href || pathname.startsWith(href + '/')
+          const loading = pending === href
+          return (
+            <button
+              key={href}
+              onClick={() => navigate(href)}
+              className="relative flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-full transition-all duration-200 min-w-[64px]"
+              style={active ? {
+                background: 'rgba(91, 91, 214, 0.12)',
+              } : undefined}
+            >
+              {loading
+                ? <Loader2 size={20} className="animate-spin text-[#5B5BD6]" />
+                : <Icon
+                    size={20}
+                    strokeWidth={active ? 2.2 : 1.7}
+                    className={active ? 'text-[#5B5BD6]' : 'text-[#6B6B6B]'}
+                  />
+              }
+              <span className={cn(
+                'text-[10px] font-[500] leading-none',
+                active || loading ? 'text-[#5B5BD6]' : 'text-[#6B6B6B]'
+              )}>
                 {label}
-              </button>
-            )
-          })}
-        </div>
-      )}
-    </nav>
+              </span>
+            </button>
+          )
+        })}
+
+        {/* Divider */}
+        <div className="w-px h-7 bg-black/[0.07] mx-1 rounded-full shrink-0" />
+
+        {/* More button */}
+        <button
+          onClick={() => setOpen(v => !v)}
+          className="relative flex flex-col items-center justify-center gap-0.5 px-4 py-2 rounded-full transition-all duration-200 min-w-[64px]"
+          style={open || moreActive ? {
+            background: 'rgba(91, 91, 214, 0.12)',
+          } : undefined}
+        >
+          {morePending
+            ? <Loader2 size={20} className="animate-spin text-[#5B5BD6]" />
+            : <MoreHorizontal
+                size={20}
+                strokeWidth={open || moreActive ? 2.2 : 1.7}
+                className={open || moreActive ? 'text-[#5B5BD6]' : 'text-[#6B6B6B]'}
+              />
+          }
+          <span className={cn(
+            'text-[10px] font-[500] leading-none',
+            open || moreActive || morePending ? 'text-[#5B5BD6]' : 'text-[#6B6B6B]'
+          )}>
+            More
+          </span>
+        </button>
+
+        {/* More popup — glass style, floats above pill */}
+        {open && (
+          <div
+            className="absolute bottom-[calc(100%+10px)] right-0 rounded-[18px] py-2 min-w-[180px] overflow-hidden"
+            style={{
+              background: 'rgba(255, 255, 255, 0.88)',
+              backdropFilter: 'blur(24px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+              border: '1px solid rgba(255, 255, 255, 0.55)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
+            }}
+          >
+            {MORE_ITEMS.map(({ href, label, Icon }, idx) => {
+              const active = pathname === href || pathname.startsWith(href + '/')
+              const loading = pending === href
+              return (
+                <button
+                  key={href}
+                  onClick={() => navigate(href)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-4 py-2.5 text-[14px] font-[450] transition-colors text-left',
+                    idx < MORE_ITEMS.length - 1 ? 'border-b border-black/[0.05]' : '',
+                    active ? 'text-[#5B5BD6]' : loading ? 'text-[#5B5BD6]' : 'text-[#111111]'
+                  )}
+                >
+                  {loading
+                    ? <Loader2 size={16} className="animate-spin shrink-0 text-[#5B5BD6]" />
+                    : <Icon
+                        size={16}
+                        strokeWidth={active ? 2.2 : 1.7}
+                        className={active || loading ? 'text-[#5B5BD6]' : 'text-[#6B6B6B]'}
+                      />
+                  }
+                  {label}
+                  {active && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#5B5BD6] shrink-0" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
