@@ -9,17 +9,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect('/login')
 
   // Check user approval status
-  const { data: approval } = await supabase
-    .from('user_approvals')
-    .select('status')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  // Admin email from env var (set ADMIN_EMAIL in Vercel env vars)
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'divyaanshkumargupta24@gmail.com'
 
-  // If no approval record or not approved, redirect to pending page
-  // Exception: admin email bypasses approval check
-  const ADMIN_EMAIL = 'divyaansh@openpaws.ai'
-  if (user.email !== ADMIN_EMAIL && approval?.status !== 'approved') {
-    redirect('/pending')
+  if (user.email !== ADMIN_EMAIL) {
+    const { data: approval } = await supabase
+      .from('user_approvals')
+      .select('status')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    // Only block if explicitly pending or rejected.
+    // No record = existing user who pre-dates the approval system → auto-approve them.
+    if (approval?.status === 'pending' || approval?.status === 'rejected') {
+      redirect('/pending')
+    }
   }
 
   const { data: semester } = await supabase
