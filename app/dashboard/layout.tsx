@@ -3,16 +3,16 @@ import { redirect } from 'next/navigation'
 import { Sidebar, BottomTabBar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'divyaanshkumargupta24@gmail.com'
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Check user approval status
-  // Admin email from env var (set ADMIN_EMAIL in Vercel env vars)
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'divyaanshkumargupta24@gmail.com'
+  const isAdmin = user.email === ADMIN_EMAIL
 
-  if (user.email !== ADMIN_EMAIL) {
+  if (!isAdmin) {
     const { data: approval } = await supabase
       .from('user_approvals')
       .select('status')
@@ -33,7 +33,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('user_id', user.id)
     .maybeSingle()
 
-  // Check for semesters at all — if none, redirect to onboarding
   const { count } = await supabase
     .from('semesters')
     .select('id', { count: 'exact', head: true })
@@ -43,7 +42,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-[#0F0F0F]">
-      <Sidebar semesterName={noSemesters ? null : (semester?.name ?? 'No active semester')} />
+      <Sidebar semesterName={noSemesters ? null : (semester?.name ?? 'No active semester')} isAdmin={isAdmin} />
 
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar semesterName={noSemesters ? null : semester?.name} />
@@ -52,7 +51,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </main>
       </div>
 
-      <BottomTabBar />
+      <BottomTabBar isAdmin={isAdmin} />
     </div>
   )
 }
