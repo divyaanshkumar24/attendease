@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTheme } from 'next-themes'
 import {
   CalendarDays, LayoutDashboard, BookOpen,
-  Clock, BarChart2, Settings, Sun, MoreHorizontal, CheckSquare, Loader2, ShieldCheck,
+  Clock, BarChart2, Settings, Sun, MoreHorizontal, CheckSquare, Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -20,11 +20,9 @@ const NAV = [
   { href: '/dashboard/settings',  label: 'Settings',  Icon: Settings },
 ]
 
-const ADMIN_NAV = { href: '/dashboard/admin', label: 'Admin', Icon: ShieldCheck }
+interface Props { semesterName?: string | null }
 
-interface Props { semesterName?: string | null; isAdmin?: boolean }
-
-export function Sidebar({ semesterName, isAdmin }: Props) {
+export function Sidebar({ semesterName }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const [pending, setPending] = useState<string | null>(null)
@@ -36,8 +34,6 @@ export function Sidebar({ semesterName, isAdmin }: Props) {
     setPending(href)
     router.push(href)
   }
-
-  const allNav = isAdmin ? [...NAV, ADMIN_NAV] : NAV
 
   return (
     <aside className="hidden md:flex w-[240px] shrink-0 flex-col bg-white dark:bg-[#1A1A1A] border-r border-[#EBEBEB] dark:border-[#2A2A2A] h-screen sticky top-0">
@@ -54,10 +50,9 @@ export function Sidebar({ semesterName, isAdmin }: Props) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        {allNav.map(({ href, label, Icon }) => {
+        {NAV.map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           const loading = pending === href
-          const isAdminTab = href === '/dashboard/admin'
           return (
             <button
               key={href}
@@ -65,9 +60,7 @@ export function Sidebar({ semesterName, isAdmin }: Props) {
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2 rounded-[8px] text-[14px] transition-colors duration-150 text-left',
                 active
-                  ? isAdminTab
-                    ? 'bg-[rgba(220,38,38,0.08)] dark:bg-[rgba(248,113,113,0.1)] text-[#DC2626] dark:text-[#F87171] font-[500]'
-                    : 'bg-[rgba(91,91,214,0.12)] dark:bg-[rgba(123,127,232,0.15)] text-[#5B5BD6] dark:text-[#7B7FE8] font-[500]'
+                  ? 'bg-[rgba(91,91,214,0.12)] dark:bg-[rgba(123,127,232,0.15)] text-[#5B5BD6] dark:text-[#7B7FE8] font-[500]'
                   : loading
                   ? 'bg-[rgba(91,91,214,0.06)] text-[#5B5BD6] dark:text-[#7B7FE8]'
                   : 'text-[#6B6B6B] dark:text-[#A0A0A0] hover:text-[#111111] dark:hover:text-[#F0F0F0] hover:bg-[rgba(0,0,0,0.04)] dark:hover:bg-[rgba(255,255,255,0.05)]'
@@ -101,9 +94,7 @@ const MORE_ITEMS = [
   { href: '/dashboard/settings',  label: 'Settings',  Icon: Settings },
 ]
 
-interface BottomTabBarProps { isAdmin?: boolean }
-
-export function BottomTabBar({ isAdmin }: BottomTabBarProps) {
+export function BottomTabBar() {
   const pathname = usePathname()
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -130,9 +121,8 @@ export function BottomTabBar({ isAdmin }: BottomTabBarProps) {
     router.push(href)
   }
 
-  const moreItems = isAdmin ? [...MORE_ITEMS, { href: '/dashboard/admin', label: 'Admin', Icon: ShieldCheck }] : MORE_ITEMS
-  const moreActive = moreItems.some(({ href }) => pathname === href || pathname.startsWith(href + '/'))
-  const morePending = moreItems.some(({ href }) => pending === href)
+  const moreActive = MORE_ITEMS.some(({ href }) => pathname === href || pathname.startsWith(href + '/'))
+  const morePending = MORE_ITEMS.some(({ href }) => pending === href)
 
   return (
     <div
@@ -231,20 +221,17 @@ export function BottomTabBar({ isAdmin }: BottomTabBarProps) {
               boxShadow: '0 8px 32px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
             }}
           >
-            {moreItems.map(({ href, label, Icon }, idx) => {
+            {MORE_ITEMS.map(({ href, label, Icon }, idx) => {
               const active = pathname === href || pathname.startsWith(href + '/')
               const loading = pending === href
-              const isAdminItem = href === '/dashboard/admin'
               return (
                 <button
                   key={href}
                   onClick={() => navigate(href)}
                   className={cn(
                     'w-full flex items-center gap-3 px-4 py-2.5 text-[14px] font-[450] transition-colors text-left',
-                    idx < moreItems.length - 1 ? 'border-b border-black/[0.05] dark:border-white/[0.05]' : '',
-                    active || loading
-                      ? isAdminItem ? 'text-[#DC2626] dark:text-[#F87171]' : 'text-[#5B5BD6] dark:text-[#7B7FE8]'
-                      : 'text-[#111111] dark:text-[#F0F0F0]'
+                    idx < MORE_ITEMS.length - 1 ? 'border-b border-black/[0.05] dark:border-white/[0.05]' : '',
+                    active ? 'text-[#5B5BD6] dark:text-[#7B7FE8]' : loading ? 'text-[#5B5BD6] dark:text-[#7B7FE8]' : 'text-[#111111] dark:text-[#F0F0F0]'
                   )}
                 >
                   {loading
@@ -252,16 +239,12 @@ export function BottomTabBar({ isAdmin }: BottomTabBarProps) {
                     : <Icon
                         size={16}
                         strokeWidth={active ? 2.2 : 1.7}
-                        className={
-                          active || loading
-                            ? isAdminItem ? 'text-[#DC2626] dark:text-[#F87171]' : 'text-[#5B5BD6] dark:text-[#7B7FE8]'
-                            : isAdminItem ? 'text-[#DC2626] dark:text-[#F87171]' : 'text-[#6B6B6B] dark:text-[#A0A0A0]'
-                        }
+                        className={active || loading ? 'text-[#5B5BD6] dark:text-[#7B7FE8]' : 'text-[#6B6B6B] dark:text-[#A0A0A0]'}
                       />
                   }
                   {label}
                   {active && (
-                    <span className={`ml-auto w-1.5 h-1.5 rounded-full shrink-0 ${isAdminItem ? 'bg-[#DC2626]' : 'bg-[#5B5BD6] dark:bg-[#7B7FE8]'}`} />
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#5B5BD6] dark:bg-[#7B7FE8] shrink-0" />
                   )}
                 </button>
               )

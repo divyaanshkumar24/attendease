@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -63,10 +62,6 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-[13px] text-[#6B6B6B]">
-          No account?{' '}
-          <Link href="/register" className="text-[#5B5BD6] hover:underline">Create one</Link>
-        </p>
       </div>
     </main>
   )
