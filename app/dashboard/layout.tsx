@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import { Sidebar, BottomTabBar } from '@/components/Sidebar'
 import { TopBar } from '@/components/TopBar'
@@ -13,15 +13,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const isAdmin = user.email === ADMIN_EMAIL
 
   if (!isAdmin) {
-    const { data: approval } = await supabase
+    const admin = createServiceRoleClient()
+    const { data: approval } = await admin
       .from('user_approvals')
       .select('status')
       .eq('user_id', user.id)
       .maybeSingle()
 
-    // Only block if explicitly pending or rejected.
-    // No record = existing user who pre-dates the approval system → auto-approve them.
-    if (approval?.status === 'pending' || approval?.status === 'rejected') {
+    if (!approval) {
+      // New user with no record — create one and block them
+      await admin.from('user_approvals').insert({
+        user_id: user.id,
+        email: user.email ?? '',
+        status: 'pending',
+      })
+      redirect('/pending')
+    }
+
+    if (approval.status !== 'approved') {
       redirect('/pending')
     }
   }

@@ -27,13 +27,13 @@ export default function RegisterPage() {
       options: { emailRedirectTo: `${location.origin}/auth/callback` },
     })
     if (error) { setError(error.message); setLoading(false); return }
-    // Insert approval request (ignored if user_id already exists)
+    // Create approval request via server route (bypasses RLS)
     if (data.user) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('user_approvals') as any).upsert(
-        { user_id: data.user.id, email, status: 'pending' },
-        { onConflict: 'user_id', ignoreDuplicates: true }
-      )
+      await fetch('/api/auth/create-approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: data.user.id, email }),
+      })
     }
     setSuccess(true)
     setLoading(false)
