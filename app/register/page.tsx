@@ -21,12 +21,20 @@ export default function RegisterPage() {
     if (password.length < 8) return setError('Password must be at least 8 characters.')
     setLoading(true)
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${location.origin}/auth/callback` },
     })
     if (error) { setError(error.message); setLoading(false); return }
+    // Insert approval request (ignored if user_id already exists)
+    if (data.user) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from('user_approvals') as any).upsert(
+        { user_id: data.user.id, email, status: 'pending' },
+        { onConflict: 'user_id', ignoreDuplicates: true }
+      )
+    }
     setSuccess(true)
     setLoading(false)
   }
@@ -39,9 +47,9 @@ export default function RegisterPage() {
             <div className="w-10 h-10 bg-[rgba(26,158,95,0.1)] rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-[18px]">✓</span>
             </div>
-            <h2 className="text-[17px] font-[500] text-[#111111] mb-2">Check your inbox</h2>
+            <h2 className="text-[17px] font-[500] text-[#111111] mb-2">Almost there!</h2>
             <p className="text-[13px] text-[#6B6B6B]">
-              We sent a confirmation link to <strong className="text-[#111111]">{email}</strong>. Click it to activate your account.
+              We sent a confirmation link to <strong className="text-[#111111]">{email}</strong>. After confirming, your account will need admin approval before you can sign in.
             </p>
           </div>
           <p className="mt-5 text-[13px] text-[#6B6B6B]">

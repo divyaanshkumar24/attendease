@@ -8,6 +8,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Check user approval status
+  const { data: approval } = await supabase
+    .from('user_approvals')
+    .select('status')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  // If no approval record or not approved, redirect to pending page
+  // Exception: admin email bypasses approval check
+  const ADMIN_EMAIL = 'divyaansh@openpaws.ai'
+  if (user.email !== ADMIN_EMAIL && approval?.status !== 'approved') {
+    redirect('/pending')
+  }
+
   const { data: semester } = await supabase
     .from('semesters')
     .select('name')
@@ -24,7 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const noSemesters = !count || count === 0
 
   return (
-    <div className="flex min-h-screen bg-[#FAFAFA]">
+    <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-[#0F0F0F]">
       <Sidebar semesterName={noSemesters ? null : (semester?.name ?? 'No active semester')} />
 
       <div className="flex-1 flex flex-col min-w-0">

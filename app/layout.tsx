@@ -3,6 +3,7 @@ import localFont from 'next/font/local'
 import './globals.css'
 import { ToastProvider } from '@/components/ui/Toast'
 import { SplashScreen } from '@/components/SplashScreen'
+import { ThemeProvider } from '@/components/ThemeProvider'
 
 const geist = localFont({
   src: './fonts/GeistVF.woff',
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geist.variable} antialiased`}>
         {/* Inline splash — renders instantly before any JS, removed by SplashScreen after hydration */}
         <div
@@ -94,7 +95,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}</style>
 
         <SplashScreen />
-        <ToastProvider>{children}</ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -6,14 +6,22 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const SUBJECT_COLORS = [
-  { name: 'Indigo',  hex: '#5B5BD6' },
-  { name: 'Teal',   hex: '#0D9488' },
-  { name: 'Rose',   hex: '#E11D48' },
-  { name: 'Amber',  hex: '#D97706' },
-  { name: 'Green',  hex: '#1A9E5F' },
-  { name: 'Violet', hex: '#7C3AED' },
-  { name: 'Sky',    hex: '#0284C7' },
-  { name: 'Orange', hex: '#EA580C' },
+  { name: 'Indigo',   hex: '#5B5BD6' },
+  { name: 'Teal',     hex: '#0D9488' },
+  { name: 'Rose',     hex: '#E11D48' },
+  { name: 'Amber',    hex: '#D97706' },
+  { name: 'Green',    hex: '#1A9E5F' },
+  { name: 'Violet',   hex: '#7C3AED' },
+  { name: 'Sky',      hex: '#0284C7' },
+  { name: 'Orange',   hex: '#EA580C' },
+  { name: 'Pink',     hex: '#DB2777' },
+  { name: 'Cyan',     hex: '#0891B2' },
+  { name: 'Lime',     hex: '#65A30D' },
+  { name: 'Red',      hex: '#DC2626' },
+  { name: 'Purple',   hex: '#9333EA' },
+  { name: 'Slate',    hex: '#475569' },
+  { name: 'Fuchsia',  hex: '#C026D3' },
+  { name: 'Emerald',  hex: '#059669' },
 ]
 
 export function autoShortCode(name: string): string {

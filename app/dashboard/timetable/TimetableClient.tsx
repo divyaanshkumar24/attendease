@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil } from 'lucide-react'
+import { Plus, Pencil, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import type { TimetableSlot, Subject, SpecialDay, ExtraLecture } from '@/lib/types'
 import { Modal } from '@/components/ui/Modal'
@@ -29,8 +29,10 @@ interface SlotModal { day: number; hour: number; existing?: TimetableSlot }
 
 export default function TimetableClient({ semesterId, subjects, slots, specialDays, extraLectures }: Props) {
   const router = useRouter()
+  const gridRef = useRef<HTMLDivElement>(null)
   const [tab, setTab] = useState<Tab>('weekly')
   const [editMode, setEditMode] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [slotModal, setSlotModal] = useState<SlotModal | null>(null)
   const [slotSubject, setSlotSubject] = useState(subjects[0]?.id ?? '')
   const [slotStart, setSlotStart] = useState('09:00')
@@ -39,14 +41,12 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
   const [slotFaculty, setSlotFaculty] = useState('')
   const [slotSaving, setSlotSaving] = useState(false)
 
-  // Special day modal
   const [sdOpen, setSdOpen] = useState(false)
   const [sdDate, setSdDate] = useState('')
   const [sdType, setSdType] = useState<'holiday' | 'no_college' | 'extra_working'>('holiday')
   const [sdLabel, setSdLabel] = useState('')
   const [sdSaving, setSdSaving] = useState(false)
 
-  // Extra lecture modal
   const [elOpen, setElOpen] = useState(false)
   const [elSubject, setElSubject] = useState(subjects[0]?.id ?? '')
   const [elDate, setElDate] = useState('')
@@ -55,7 +55,6 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
   const [elReason, setElReason] = useState('')
   const [elSaving, setElSaving] = useState(false)
 
-  // Build slot lookup: day → hour → slot
   const slotMap = new Map<string, TimetableSlot>()
   for (const s of slots) {
     const h = parseInt(s.start_time.split(':')[0])
@@ -121,6 +120,26 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
     setElSaving(false); setElOpen(false); setElDate(''); setElReason(''); router.refresh()
   }
 
+  async function exportToImage() {
+    if (!gridRef.current) return
+    setExporting(true)
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const canvas = await html2canvas(gridRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+      })
+      const link = document.createElement('a')
+      link.download = 'timetable.png'
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const today = new Date().toISOString().split('T')[0]
   const upcomingSD = specialDays.filter(d => d.date >= today)
   const pastSD = specialDays.filter(d => d.date < today)
@@ -131,12 +150,12 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
   return (
     <div className="max-w-5xl space-y-5">
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#FAFAFA] border border-[#EBEBEB] rounded-[8px] p-1 w-fit">
+      <div className="flex gap-1 bg-[#FAFAFA] dark:bg-[#111111] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-[8px] p-1 w-fit">
         {(['weekly', 'special'] as Tab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-[6px] text-[13px] font-[500] transition-colors duration-150 capitalize ${tab === t ? 'bg-white border border-[#EBEBEB] text-[#111111]' : 'text-[#6B6B6B] hover:text-[#111111]'}`}
+            className={`px-4 py-1.5 rounded-[6px] text-[13px] font-[500] transition-colors duration-150 capitalize ${tab === t ? 'bg-white dark:bg-[#242424] border border-[#EBEBEB] dark:border-[#2A2A2A] text-[#111111] dark:text-[#F0F0F0]' : 'text-[#6B6B6B] dark:text-[#A0A0A0] hover:text-[#111111] dark:hover:text-[#F0F0F0]'}`}
           >
             {t === 'weekly' ? 'Weekly schedule' : 'Special days'}
           </button>
@@ -147,23 +166,29 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
       {tab === 'weekly' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-[12px] text-[#ABABAB]">{editMode ? 'Click any cell to add or edit a slot.' : 'Enable edit mode to modify the schedule.'}</p>
-            <Button size="sm" variant={editMode ? 'secondary' : 'secondary'} onClick={() => setEditMode(v => !v)}>
-              {editMode ? 'Done' : <><Pencil size={13} /> Edit</>}
-            </Button>
+            <p className="text-[12px] text-[#ABABAB] dark:text-[#606060]">{editMode ? 'Click any cell to add or edit a slot.' : 'Enable edit mode to modify the schedule.'}</p>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={exportToImage} disabled={exporting} className="gap-1.5">
+                <Download size={13} />
+                {exporting ? 'Exporting…' : 'Export image'}
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setEditMode(v => !v)}>
+                {editMode ? 'Done' : <><Pencil size={13} /> Edit</>}
+              </Button>
+            </div>
           </div>
 
-          {/* Grid */}
-          <div className="overflow-x-auto">
-            <div className="min-w-[520px]">
-              <div className="grid gap-px" style={{ gridTemplateColumns: '48px repeat(6, 1fr)' }}>
+          {/* Grid — wrapped in ref for export */}
+          <div ref={gridRef} className="overflow-x-auto bg-white dark:bg-[#1A1A1A] p-4 rounded-[10px] border border-[#EBEBEB] dark:border-[#2A2A2A]">
+            <div className="min-w-[560px]">
+              <div className="grid gap-px" style={{ gridTemplateColumns: '52px repeat(6, 1fr)' }}>
                 <div />
                 {DAYS.map(d => (
-                  <div key={d} className="text-center text-[11px] text-[#ABABAB] py-1.5">{DAY_SHORT[d]}</div>
+                  <div key={d} className="text-center text-[11px] font-[500] text-[#ABABAB] dark:text-[#606060] py-2">{DAY_SHORT[d]}</div>
                 ))}
                 {HOURS.map(hour => (
                   <div key={hour} className="contents">
-                    <div className="flex items-center justify-end pr-2 text-[11px] text-[#ABABAB]">{hour}:00</div>
+                    <div className="flex items-center justify-end pr-2 text-[11px] text-[#ABABAB] dark:text-[#606060]">{hour}:00</div>
                     {DAYS.map(day => {
                       const slot = slotMap.get(`${day}-${hour}`)
                       const subject = slot ? subjectById.get(slot.subject_id) : undefined
@@ -171,10 +196,18 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
                         <button
                           key={day}
                           onClick={() => openCell(day, hour)}
-                          className={`h-9 rounded-[4px] border text-[10px] font-[500] transition-colors duration-100 ${editMode ? 'cursor-pointer' : 'cursor-default'} ${slot ? '' : 'border-[#EBEBEB] bg-[#FAFAFA] hover:border-[#5B5BD6]'}`}
-                          style={subject ? { backgroundColor: subject.color, borderColor: subject.color, color: '#fff' } : {}}
+                          className={`h-[60px] rounded-[5px] border text-left px-1.5 py-1 flex flex-col justify-center gap-[2px] transition-colors duration-100 ${editMode ? 'cursor-pointer' : 'cursor-default'} ${slot ? '' : 'border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#111111] hover:border-[#5B5BD6] dark:hover:border-[#7B7FE8]'}`}
+                          style={subject ? { backgroundColor: subject.color, borderColor: subject.color } : {}}
                         >
-                          {subject?.short_code ?? ''}
+                          {subject ? (
+                            <>
+                              <span className="text-[10px] font-[600] text-white leading-none">{subject.short_code}</span>
+                              {slot?.room && (
+                                <span className="text-[9px] text-white/80 leading-none font-[400]">{slot.room}</span>
+                              )}
+                              <span className="text-[9px] text-white/70 leading-none">{fmtTime(slot!.start_time)}</span>
+                            </>
+                          ) : null}
                         </button>
                       )
                     })}
@@ -188,7 +221,7 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
           {subjects.length > 0 && (
             <div className="flex flex-wrap gap-3 pt-1">
               {subjects.map(s => (
-                <div key={s.id} className="flex items-center gap-1.5 text-[12px] text-[#6B6B6B]">
+                <div key={s.id} className="flex items-center gap-1.5 text-[12px] text-[#6B6B6B] dark:text-[#A0A0A0]">
                   <span className="w-2.5 h-2.5 rounded-[3px]" style={{ backgroundColor: s.color }} />
                   {s.name}
                 </div>
@@ -197,25 +230,25 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
           )}
 
           {/* Extra lectures section */}
-          <div className="pt-4 border-t border-[#EBEBEB]">
+          <div className="pt-4 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[13px] font-[500] text-[#111111]">Extra lectures</h3>
+              <h3 className="text-[13px] font-[500] text-[#111111] dark:text-[#F0F0F0]">Extra lectures</h3>
               <Button size="sm" variant="secondary" onClick={() => setElOpen(true)} className="gap-1.5">
                 <Plus size={13} /> Add extra lecture
               </Button>
             </div>
             {!extraLectures.length ? (
-              <p className="text-[13px] text-[#ABABAB]">No extra lectures scheduled.</p>
+              <p className="text-[13px] text-[#ABABAB] dark:text-[#606060]">No extra lectures scheduled.</p>
             ) : (
               <div className="space-y-2">
                 {extraLectures.map(el => {
                   const subj = subjectById.get(el.subject_id)
                   return (
-                    <div key={el.id} className="bg-white border border-[#EBEBEB] rounded-[8px] px-4 py-3 flex items-center gap-3">
+                    <div key={el.id} className="bg-white dark:bg-[#1A1A1A] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-[8px] px-4 py-3 flex items-center gap-3">
                       {subj && <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: subj.color }} />}
-                      <span className="font-[500] text-[#111111] text-[13px]">{subj?.name ?? '—'}</span>
-                      <span className="text-[12px] text-[#ABABAB]">{el.date} · {fmtTime(el.start_time)} – {fmtTime(el.end_time)}</span>
-                      {el.reason && <span className="text-[12px] text-[#6B6B6B] ml-auto">{el.reason}</span>}
+                      <span className="font-[500] text-[#111111] dark:text-[#F0F0F0] text-[13px]">{subj?.name ?? '—'}</span>
+                      <span className="text-[12px] text-[#ABABAB] dark:text-[#606060]">{el.date} · {fmtTime(el.start_time)} – {fmtTime(el.end_time)}</span>
+                      {el.reason && <span className="text-[12px] text-[#6B6B6B] dark:text-[#A0A0A0] ml-auto">{el.reason}</span>}
                     </div>
                   )
                 })}
@@ -247,11 +280,11 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
       <Modal open={!!slotModal} onClose={() => setSlotModal(null)} title={slotModal?.existing ? 'Edit slot' : `Add slot — ${DAY_NAMES[slotModal?.day ?? 1]}`}>
         <div className="space-y-4">
           <div>
-            <label className="text-[13px] font-[500] text-[#111111] block mb-1.5">Subject</label>
+            <label className="text-[13px] font-[500] text-[#111111] dark:text-[#F0F0F0] block mb-1.5">Subject</label>
             <select
               value={slotSubject}
               onChange={e => setSlotSubject(e.target.value)}
-              className="w-full rounded-[8px] border border-[#EBEBEB] bg-[#FAFAFA] px-3 py-2 text-[14px] text-[#111111] outline-none focus:border-[#5B5BD6] focus:ring-2 focus:ring-[rgba(91,91,214,0.18)]"
+              className="w-full rounded-[8px] border border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#111111] px-3 py-2 text-[14px] text-[#111111] dark:text-[#F0F0F0] outline-none focus:border-[#5B5BD6] dark:focus:border-[#7B7FE8] focus:ring-2 focus:ring-[rgba(91,91,214,0.18)]"
             >
               {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
@@ -279,11 +312,11 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
         <div className="space-y-4">
           <Input label="Date" type="date" value={sdDate} onChange={e => setSdDate(e.target.value)} />
           <div>
-            <label className="text-[13px] font-[500] text-[#111111] block mb-1.5">Type</label>
+            <label className="text-[13px] font-[500] text-[#111111] dark:text-[#F0F0F0] block mb-1.5">Type</label>
             <select
               value={sdType}
               onChange={e => setSdType(e.target.value as typeof sdType)}
-              className="w-full rounded-[8px] border border-[#EBEBEB] bg-[#FAFAFA] px-3 py-2 text-[14px] text-[#111111] outline-none focus:border-[#5B5BD6]"
+              className="w-full rounded-[8px] border border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#111111] px-3 py-2 text-[14px] text-[#111111] dark:text-[#F0F0F0] outline-none focus:border-[#5B5BD6] dark:focus:border-[#7B7FE8]"
             >
               <option value="holiday">Holiday</option>
               <option value="no_college">No college</option>
@@ -302,8 +335,8 @@ export default function TimetableClient({ semesterId, subjects, slots, specialDa
       <Modal open={elOpen} onClose={() => setElOpen(false)} title="Add extra lecture">
         <div className="space-y-4">
           <div>
-            <label className="text-[13px] font-[500] text-[#111111] block mb-1.5">Subject</label>
-            <select value={elSubject} onChange={e => setElSubject(e.target.value)} className="w-full rounded-[8px] border border-[#EBEBEB] bg-[#FAFAFA] px-3 py-2 text-[14px] text-[#111111] outline-none focus:border-[#5B5BD6]">
+            <label className="text-[13px] font-[500] text-[#111111] dark:text-[#F0F0F0] block mb-1.5">Subject</label>
+            <select value={elSubject} onChange={e => setElSubject(e.target.value)} className="w-full rounded-[8px] border border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#111111] px-3 py-2 text-[14px] text-[#111111] dark:text-[#F0F0F0] outline-none focus:border-[#5B5BD6] dark:focus:border-[#7B7FE8]">
               {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
@@ -334,13 +367,13 @@ function SpecialDayList({
   if (!days.length) return null
   return (
     <div>
-      <h3 className="text-[12px] text-[#ABABAB] mb-2">{title}</h3>
+      <h3 className="text-[12px] text-[#ABABAB] dark:text-[#606060] mb-2">{title}</h3>
       <div className="space-y-2">
         {days.map(d => (
-          <div key={d.id} className="bg-white border border-[#EBEBEB] rounded-[8px] px-4 py-3 flex items-center gap-3">
-            <span className="font-[500] text-[#111111] text-[13px]">{d.label}</span>
+          <div key={d.id} className="bg-white dark:bg-[#1A1A1A] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-[8px] px-4 py-3 flex items-center gap-3">
+            <span className="font-[500] text-[#111111] dark:text-[#F0F0F0] text-[13px]">{d.label}</span>
             <Badge variant={variants[d.type] ?? 'neutral'}>{typeLabels[d.type]}</Badge>
-            <span className="ml-auto text-[12px] text-[#ABABAB]">{d.date}</span>
+            <span className="ml-auto text-[12px] text-[#ABABAB] dark:text-[#606060]">{d.date}</span>
           </div>
         ))}
       </div>

@@ -33,16 +33,16 @@ export function Modal({ open, onClose, title, children, className }: Props) {
     >
       <div
         className={cn(
-          'bg-white border border-[#EBEBEB] rounded-[10px] w-full max-w-md mx-4 shadow-none',
+          'bg-white dark:bg-[#1A1A1A] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-[10px] w-full max-w-md mx-4 shadow-none',
           'animate-in fade-in zoom-in-95 duration-200',
           className
         )}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#EBEBEB]">
-          <h2 className="text-[15px] font-[500] text-[#111111]">{title}</h2>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#EBEBEB] dark:border-[#2A2A2A]">
+          <h2 className="text-[15px] font-[500] text-[#111111] dark:text-[#F0F0F0]">{title}</h2>
           <button
             onClick={onClose}
-            className="text-[#ABABAB] hover:text-[#111111] transition-colors rounded-[6px] p-1"
+            className="text-[#ABABAB] dark:text-[#606060] hover:text-[#111111] dark:hover:text-[#F0F0F0] transition-colors rounded-[6px] p-1"
           >
             <X size={16} />
           </button>

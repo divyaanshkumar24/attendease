@@ -163,8 +163,13 @@ export default function SettingsClient({ semesters, email }: Props) {
           {pwMsg && <p className={`text-[12px] ${pwMsg.ok ? 'text-[#1A9E5F]' : 'text-[#DC2626]'}`}>{pwMsg.text}</p>}
           <Button size="sm" onClick={changePassword} disabled={pwSaving}>{pwSaving ? 'Updating…' : 'Update password'}</Button>
         </div>
-        <div className="border-t border-[#EBEBEB] pt-4 mt-4">
+        <div className="border-t border-[#EBEBEB] dark:border-[#2A2A2A] pt-4 mt-4 flex items-center gap-3 flex-wrap">
           <Button variant="secondary" size="sm" onClick={logout}>Sign out</Button>
+          {email === 'divyaansh@openpaws.ai' && (
+            <a href="/admin">
+              <Button variant="secondary" size="sm">Admin panel</Button>
+            </a>
+          )}
         </div>
       </Card>
 
