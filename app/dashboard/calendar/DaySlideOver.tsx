@@ -17,6 +17,7 @@ interface Props {
   date: string
   userId: string
   semesterId: string
+  semesterStartDate?: string
   onClose: () => void
   onChanged: () => void
 }
@@ -36,7 +37,7 @@ const STATUS_BTNS: { status: AttendanceStatus; label: string; activeClass: strin
   },
 ]
 
-export default function DaySlideOver({ date, userId, semesterId, onClose, onChanged }: Props) {
+export default function DaySlideOver({ date, userId, semesterId, semesterStartDate, onClose, onChanged }: Props) {
   const [result, setResult] = useState<DayScheduleResult | null>(null)
   const [localStatuses, setLocalStatuses] = useState<Record<string, AttendanceStatus | null>>({})
   const [loading, setLoading] = useState(true)
@@ -62,7 +63,7 @@ export default function DaySlideOver({ date, userId, semesterId, onClose, onChan
   async function load() {
     setLoading(true)
     const [r, todosData] = await Promise.all([
-      getDaySchedule(supabase, date, userId, semesterId),
+      getDaySchedule(supabase, date, userId, semesterId, semesterStartDate),
       getDayTodos(supabase, userId, date),
     ])
     setResult(r)

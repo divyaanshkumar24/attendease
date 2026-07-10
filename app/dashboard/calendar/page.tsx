@@ -38,7 +38,7 @@ export default async function CalendarPage({
   const subjects = (subjectsRaw ?? []) as Pick<Subject, 'id' | 'name' | 'short_code' | 'color'>[]
 
   const [calendarData, todoCounts] = await Promise.all([
-    getMonthCalendarData(supabase, year, month, user!.id, semester.id),
+    getMonthCalendarData(supabase, year, month, user!.id, semester.id, semester.start_date ?? undefined),
     getMonthTodoCounts(supabase, user!.id, year, month),
   ])
 
@@ -50,6 +50,7 @@ export default async function CalendarPage({
       calendarData={calendarData}
       subjects={subjects}
       semesterId={semester.id}
+      semesterStartDate={semester.start_date ?? undefined}
       userId={user!.id}
       todoCounts={todoCounts}
     />

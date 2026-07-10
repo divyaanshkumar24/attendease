@@ -15,6 +15,7 @@ interface Props {
   calendarData: Record<string, DayCalendarCell>
   subjects: Pick<Subject, 'id' | 'name' | 'short_code' | 'color'>[]
   semesterId: string
+  semesterStartDate?: string
   userId: string
   todoCounts: Record<string, number>
 }
@@ -33,7 +34,7 @@ const STATUS_DOT: Record<string, string> = {
   none:       '',
 }
 
-export default function CalendarClient({ year, month, today, calendarData, subjects, semesterId, userId, todoCounts }: Props) {
+export default function CalendarClient({ year, month, today, calendarData, subjects, semesterId, semesterStartDate, userId, todoCounts }: Props) {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
@@ -201,6 +202,7 @@ export default function CalendarClient({ year, month, today, calendarData, subje
           date={selectedDate}
           userId={userId}
           semesterId={semesterId}
+          semesterStartDate={semesterStartDate}
           onClose={() => setSelectedDate(null)}
           onChanged={() => router.refresh()}
         />

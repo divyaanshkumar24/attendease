@@ -38,7 +38,7 @@ export default async function TodayPage() {
   const subjects = (subjectsRaw ?? []) as Subject[]
 
   const [dayResult, overallStats, subjectStatsArr] = await Promise.all([
-    getDaySchedule(supabase, todayStr, user!.id, semester.id),
+    getDaySchedule(supabase, todayStr, user!.id, semester.id, semester.start_date ?? undefined),
     getOverallStats(supabase, semester.id, user!.id),
     getAllSubjectStats(supabase, semester.id, user!.id),
   ])

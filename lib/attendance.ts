@@ -195,7 +195,13 @@ export async function getDaySchedule(
   date: string,
   userId: string,
   semesterId: string,
+  semesterStartDate?: string,
 ): Promise<DayScheduleResult> {
+  // Don't show any schedule for days before the semester starts
+  if (semesterStartDate && date < semesterStartDate) {
+    return { kind: 'schedule', lectures: [], specialDay: null }
+  }
+
   const cacheKey = key.daySchedule(userId, semesterId, date)
   const cached = await cacheGet<DayScheduleResult>(cacheKey)
   if (cached) return cached
@@ -260,6 +266,7 @@ export async function getMonthCalendarData(
   month: number,
   userId: string,
   semesterId: string,
+  semesterStartDate?: string,
 ): Promise<Record<string, DayCalendarCell>> {
   const cacheKey = key.calendar(userId, semesterId, year, month)
   const cached = await cacheGet<Record<string, DayCalendarCell>>(cacheKey)
@@ -306,6 +313,12 @@ export async function getMonthCalendarData(
     const dayOfWeek = jsDay === 0 ? 7 : jsDay
     const isFuture = dateStr > today
     const sd = specialDayMap.get(dateStr)
+
+    // Days before the semester starts show as empty — no lectures scheduled yet
+    if (semesterStartDate && dateStr < semesterStartDate) {
+      result[dateStr] = { date: dateStr, status: 'none', lectureCount: 0, subjectColors: [] }
+      continue
+    }
 
     if (sd && (sd.type === 'holiday' || sd.type === 'no_college')) {
       result[dateStr] = { date: dateStr, status: sd.type as 'holiday' | 'no_college', lectureCount: 0, subjectColors: [] }
