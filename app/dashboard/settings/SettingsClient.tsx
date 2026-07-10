@@ -185,6 +185,16 @@ export default function SettingsClient({ semesters, email }: Props) {
         loading={semDeleting}
       />
 
+      {/* ── Credits ──────────────────────────────────── */}
+      <div className="text-center py-2">
+        <p className="text-[12px] text-[#ABABAB] dark:text-[#606060]">
+          Made with ♥ by{' '}
+          <span className="text-[#6B6B6B] dark:text-[#A0A0A0] font-[500]">Divyaansh Kumar</span>
+          {' '}&{' '}
+          <span className="text-[#6B6B6B] dark:text-[#A0A0A0] font-[500]">Ayush Mangela</span>
+        </p>
+      </div>
+
       <Modal open={deleteOpen} onClose={() => { setDeleteOpen(false); setDeleteConfirm('') }} title="Delete account">
         <div className="space-y-4">
           <p className="text-[14px] text-[#6B6B6B]">This will permanently erase all your semesters, subjects, timetables, and attendance records. This cannot be undone.</p>
